@@ -53,7 +53,7 @@ public class ShelfStockingProducts : MonoBehaviour
                 spawnedProduct.transform.SetParent(this.transform, false); // Keeps scale clean!
                 spawnedProduct.transform.position = slot.position;
                 spawnedProduct.transform.rotation = slot.rotation;
-                spawnedProduct.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f);
+                spawnedProduct.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
 
                 Debug.Log($"[{gameObject.name}] Stocked {spawnedProduct.name} onto slot {slot.name} in {row.name}");
             }

@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b7bbba0b9711104da7045114e41d698, type: 3}
   m_Name: Nachos
   m_EditorClassIdentifier: 
-  productName: 
-  price: 0
-  productID: 
+  productName: Nachos
+  price: 2
+  productID: 002

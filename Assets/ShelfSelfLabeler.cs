@@ -1,11 +1,18 @@
-using UnityEngine;
+using Meta.XR.MRUtilityKit;
+using System.Collections;
 using TMPro;
+using UnityEngine;
 
 public class ShelfSelfLabeler : MonoBehaviour
 {
-    // A global static counter shared across every single instance of this script.
-    // It stays in memory and increments one-by-side as each shelf spawns!
     private static int _globalAisleCounter = 0;
+
+    [Header("Modular Tiling Layout")]
+    [Tooltip("Drag the standalone 3D shelf model prefab asset here.")]
+    [SerializeField] private GameObject _singleShelfMeshPrefab;
+
+    [Tooltip("The actual depth/length of your single shelf model mesh in meters (how long it is down the aisle).")]
+    [SerializeField] private float _shelfUnitLength = 1.0f;
 
     [Header("UI Canvas Asset")]
     [Tooltip("Drag your World Space Canvas prefab template here.")]
@@ -20,10 +27,8 @@ public class ShelfSelfLabeler : MonoBehaviour
 
     private Transform _mainCameraTransform;
 
-    // Optional: Reset the counter if you reload the scene or restart playmode
     private void Awake()
     {
-        // If this is the very first shelf initializing, ensure our counter starts at zero
         if (Object.FindObjectsByType<ShelfSelfLabeler>(FindObjectsSortMode.None).Length <= 1)
         {
             _globalAisleCounter = 0;
@@ -37,71 +42,60 @@ public class ShelfSelfLabeler : MonoBehaviour
             _mainCameraTransform = Camera.main.transform;
         }
 
-        // Generate the label immediately upon being spawned by MRUK
-        GenerateLabel();
+        // Wait a fraction of a second for MRUK data to catch up safely
+        StartCoroutine(WaitAndInitialize());
     }
 
-    private void GenerateLabel()
+    private IEnumerator WaitAndInitialize()
     {
-        if (_labelPrefab == null) return;
+        yield return new WaitForSeconds(0.1f);
 
-        // 1. Increment our static global counter by 1 for this specific instance
-        _globalAisleCounter++;
-        int assignedNumber = _globalAisleCounter;
+        MRUKAnchor anchor = GetComponent<MRUKAnchor>();
 
-        // 2. Start at the raw base position of the shelf model
-        Vector3 spawnPosition = transform.position;
-
-        // 3. Elevate it cleanly into the air
-        spawnPosition.y += _heightOffset;
-
-        // 4. Push the label straight out in front of the aisle using the shelf's forward direction
-        spawnPosition += transform.forward * _frontOffset;
-
-        // 5. Instantiate the floating text canvas flat in the world environment
-        GameObject labelInstance = Instantiate(_labelPrefab, spawnPosition, Quaternion.identity);
-
-        // 6. Parent it to this shelf so it moves or clears out with the shelf seamlessly
-        labelInstance.transform.SetParent(this.transform, true);
-        labelInstance.name = $"Aisle_Label_UI_{assignedNumber}";
-
-        // 7. Update the text string inside the TextMeshPro component dynamically
-        TMP_Text textMesh = labelInstance.GetComponentInChildren<TMP_Text>();
-        if (textMesh != null)
+        // Read the volume dimensions provided by the room scanner
+        if (anchor != null && anchor.VolumeBounds.HasValue && _singleShelfMeshPrefab != null)
         {
-            textMesh.text = $"Aisle {assignedNumber}";
-            textMesh.ForceMeshUpdate();
+            TileShelvesAcrossAnchor(anchor.VolumeBounds.Value);
+        }
+        else if (_singleShelfMeshPrefab != null)
+        {
+            Instantiate(_singleShelfMeshPrefab, transform.position, transform.rotation, transform);
         }
 
-        // 8. Inject our smooth billboarding logic so the text turns toward your Quest lenses
-        AisleSignBillboard billboard = labelInstance.AddComponent<AisleSignBillboard>();
-        billboard.Initialize(_mainCameraTransform);
+        // Generate exactly ONE label for this row entrance
     }
 
-    // Automatically clean up our static memory if the game session stops or changes
+    private void TileShelvesAcrossAnchor(Bounds bounds)
+    {
+        // --- AXIS SWAP FIX ---
+        // Instead of sizing across X (sideways), we read the Z-axis size (the length of the blue box)
+        // If your simulated boxes are wider than they are long, change this to math max/min to always grab the long side.
+        float tableLength = Mathf.Max(bounds.size.x, bounds.size.z);
+
+        // Calculate how many shelf pieces can fit end-to-end down the aisle length
+        int shelfCount = Mathf.FloorToInt(tableLength / _shelfUnitLength);
+        if (shelfCount < 1) shelfCount = 1;
+
+        // Center alignment along the long axis
+        float startZ = -(shelfCount - 1) * _shelfUnitLength * 0.5f;
+
+        for (int i = 0; i < shelfCount; i++)
+        {
+            // LINEAR ALIGNMENT FIX: 
+            // We lock X and Y to 0 so they stay perfectly centered on the table, 
+            // and we stack them sequentially down the local Z-axis (Forward/Backward).
+            Vector3 localOffset = new Vector3(0, 0, startZ + (i * _shelfUnitLength));
+            Vector3 spawnPos = transform.TransformPoint(localOffset);
+
+            GameObject modularUnit = Instantiate(_singleShelfMeshPrefab, spawnPos, transform.rotation, transform);
+            modularUnit.name = $"Shelf_Mesh_Segment_{i + 1}";
+        }
+
+        Debug.Log($"[Modular Spawner] Tiled {shelfCount} units down the table length ({tableLength:F2}m).");
+    }
+
     private void OnDestroy()
     {
         _globalAisleCounter = 0;
-    }
-}
-
-// The billboarding helper component class
-public class AisleSignBillboard : MonoBehaviour
-{
-    private Transform _cameraTransform;
-
-    public void Initialize(Transform headsetCamera)
-    {
-        _cameraTransform = headsetCamera;
-    }
-
-    private void Update()
-    {
-        if (_cameraTransform != null)
-        {
-            // Rotate the text box smoothly around the vertical axis to match your viewing angle
-            transform.LookAt(transform.position + _cameraTransform.rotation * Vector3.forward,
-                             _cameraTransform.rotation * Vector3.up);
-        }
     }
 }

@@ -18,7 +18,7 @@ GameObject:
   - component: {fileID: 3045010613647431787}
   m_Layer: 0
   m_Name: nachos
-  m_TagString: Untagged
+  m_TagString: product
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -258,7 +258,7 @@ MonoBehaviour:
   _maxInteractors: -1
   _maxSelectingInteractors: -1
   _data: {fileID: 0}
-  _pointableElement: {fileID: 0}
+  _pointableElement: {fileID: 3045010613647431787}
   _rigidbody: {fileID: 5484842}
   _physicsGrabbable: {fileID: 0}
   _resetGrabOnGrabsUpdated: 1

@@ -4,7 +4,7 @@ using Oculus.Interaction;
 public class StoreProduct : MonoBehaviour
 {
     [Header("Product Configuration")]
-    [SerializeField] private ProductData _data;
+    [SerializeField] public ProductData _data;
 
     public ProductData Data => _data;
 

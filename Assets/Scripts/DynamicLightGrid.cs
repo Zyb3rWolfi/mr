@@ -15,6 +15,7 @@ public class DynamicLightGrid : MonoBehaviour
 
     private void Start()
     {
+        transform.Rotate(90, 0, 0);
         GenerateLightGrid();
     }
 

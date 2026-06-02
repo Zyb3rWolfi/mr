@@ -1,11 +1,11 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class ShelfStockingProducts : MonoBehaviour
 {
     [Header("Product Configuration")]
-    [Tooltip("Each element here will correspond to a row. Index 0 = Row 0, Index 1 = Row 1, etc.")]
+    [Tooltip("The script will pick one random item from this list to fill an entire row.")]
     [SerializeField] private List<GameObject> _productPrefabsList;
 
     [Header("Slot References")]
@@ -31,22 +31,18 @@ public class ShelfStockingProducts : MonoBehaviour
             return;
         }
 
-        int rowIndex = 0;
-
         // 1. Loop through each Row container (Row_0, Row_1, Row_2, etc.)
         foreach (Transform row in _slotsContainer)
         {
-            // Safeguard: Assign a specific product for this row based on the row index.
-            // If you have more rows than assigned prefabs, loop back around using modulo (%)
-            int productToUseIndex = rowIndex % _productPrefabsList.Count;
-            GameObject rowProduct = _productPrefabsList[productToUseIndex];
+            // ✅ RANDOM PER ROW: Pick one random item for this entire row before starting the slots loop
+            int randomProductIndex = Random.Range(0, _productPrefabsList.Count);
+            GameObject rowProduct = _productPrefabsList[randomProductIndex];
 
-            Debug.Log($"[{gameObject.name}] Stocking Row '{row.name}' with product: {rowProduct.name}");
+            Debug.Log($"[{gameObject.name}] Stocking Row '{row.name}' with random product: {rowProduct.name}");
 
             // 2. Loop through every individual slot inside this specific row
             foreach (Transform slot in row)
             {
-                // Spawn the specific row product instead of a random one
                 GameObject spawnedProduct = Instantiate(rowProduct, slot.position, slot.rotation);
 
                 // Preserve local positioning architecture
@@ -54,12 +50,7 @@ public class ShelfStockingProducts : MonoBehaviour
                 spawnedProduct.transform.position = slot.position;
                 spawnedProduct.transform.rotation = slot.rotation;
                 spawnedProduct.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
-
-                Debug.Log($"[{gameObject.name}] Stocked {spawnedProduct.name} onto slot {slot.name} in {row.name}");
             }
-
-            // Move to the next product prefab for the next row loop iteration
-            rowIndex++;
         }
     }
 }
